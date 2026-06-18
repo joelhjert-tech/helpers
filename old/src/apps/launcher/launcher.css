@@ -1,0 +1,140 @@
+.launcher {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 48px clamp(16px, 5vw, 80px) 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(120, 180, 255, 0.08), transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(255, 210, 130, 0.08), transparent 35%),
+    #0e1116;
+  color: #e8edf2;
+}
+
+.launcher__hero { text-align: center; }
+.launcher__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-size: 12px;
+  color: #8fb4d8;
+  margin: 0 0 10px;
+}
+.launcher__hero h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  margin: 0 0 8px;
+}
+.launcher__hero span { color: #9aa6b2; }
+
+.launcher__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  flex: 1;
+  align-content: center;
+}
+
+.moon-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #171c24;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.moon-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4); }
+.moon-card__icon { width: 64px; height: 64px; }
+.moon-card__icon svg { width: 100%; height: 100%; }
+.moon-card__kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 11px;
+  margin: 6px 0 0;
+  opacity: 0.75;
+}
+.moon-card h2 { margin: 0; font-size: 22px; }
+.moon-card__blurb { margin: 0; color: #9aa6b2; font-size: 14px; line-height: 1.5; }
+.moon-card__focus {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.moon-card__focus li {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.moon-card__cta {
+  margin-top: auto;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  color: #0e1116;
+}
+
+/* Cutscene = warm film/wood */
+.moon-card--film { background: linear-gradient(160deg, #2a2018, #181410); border-color: rgba(214, 168, 98, 0.35); }
+.moon-card--film .moon-card__icon svg rect { fill: #1c1813; stroke: #d6a862; stroke-width: 2; }
+.moon-card--film .film-perf rect { fill: #d6a862; stroke: none; }
+.moon-card--film .film-play { fill: #f0d9a8; stroke: none; }
+.moon-card--film .moon-card__kicker { color: #e7c187; }
+.moon-card--film .moon-card__cta { background: #d6a862; }
+
+/* Schedule = cool map/cork */
+.moon-card--map { background: linear-gradient(160deg, #16241f, #101a17); border-color: rgba(120, 200, 160, 0.3); }
+.moon-card--map .clock-face { fill: #101a17; stroke: #79c8a0; stroke-width: 2; }
+.moon-card--map .moon-card__icon svg line { stroke: #cfeede; stroke-width: 2; stroke-linecap: round; }
+.moon-card--map .clock-pin { fill: #79c8a0; stroke: none; }
+.moon-card--map .moon-card__kicker { color: #8fe0b6; }
+.moon-card--map .moon-card__cta { background: #79c8a0; }
+
+/* Animation = violet canvas/studio */
+.moon-card--canvas { background: linear-gradient(160deg, #221a2c, #15101c); border-color: rgba(190, 150, 230, 0.32); }
+.moon-card--canvas .canvas-frame { fill: #15101c; stroke: #be96e6; stroke-width: 2; }
+.moon-card--canvas .canvas-head { fill: #be96e6; stroke: none; }
+.moon-card--canvas .canvas-body { fill: none; stroke: #be96e6; stroke-width: 2; }
+.moon-card--canvas .canvas-brush { fill: #f0d9a8; stroke: none; }
+.moon-card--canvas .moon-card__kicker { color: #d2b3f0; }
+.moon-card--canvas .moon-card__cta { background: #be96e6; }
+
+.launcher__footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.launcher__footer button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #171c24;
+  color: #e8edf2;
+  cursor: pointer;
+  font-size: 13px;
+}
+.launcher__footer button:hover { border-color: rgba(255, 255, 255, 0.3); }
+.launcher__pixellab {
+  margin-left: auto;
+  font-size: 12px;
+  color: #9aa6b2;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}

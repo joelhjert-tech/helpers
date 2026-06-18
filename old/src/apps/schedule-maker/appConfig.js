@@ -1,0 +1,20 @@
+export const scheduleMakerApp = {
+  id: "schedule-maker",
+  title: "Schedule Maker",
+  shortTitle: "Schedules",
+  route: "/schedule-maker",
+  defaultSection: "schedule",
+  defaultTab: "schedule",
+  sections: ["schedule"],
+  loadTab: "workspace",
+  exportTab: "schedule",
+  validateTab: "schedule",
+  purpose: "Load, correct, preview, test, and export NPC schedules.",
+  focus: [
+    "NPC schedule editor",
+    "Time-based route steps",
+    "Manual asset map loading",
+    "Pathfinding validation",
+    "Playback and follow mode",
+  ],
+};

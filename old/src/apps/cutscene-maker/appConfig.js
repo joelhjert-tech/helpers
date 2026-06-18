@@ -1,0 +1,20 @@
+export const cutsceneMakerApp = {
+  id: "cutscene-maker",
+  title: "Cutscene Maker",
+  shortTitle: "Cutscenes",
+  route: "/cutscene-maker",
+  defaultSection: "event",
+  defaultTab: "actors",
+  sections: ["event"],
+  loadTab: "workspace",
+  exportTab: "export",
+  validateTab: "export",
+  purpose: "Build, preview, test, and export Stardew event scripts.",
+  focus: [
+    "Event script builder",
+    "Actor placement",
+    "Map preview",
+    "Viewport and camera controls",
+    "Live event testing",
+  ],
+};

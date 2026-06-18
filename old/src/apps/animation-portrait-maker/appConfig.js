@@ -1,0 +1,21 @@
+export const animationPortraitMakerApp = {
+  id: "animation-portrait-maker",
+  title: "Animation & Portrait Maker",
+  shortTitle: "Portraits",
+  route: "/animation-portrait-maker",
+  defaultSection: "animation",
+  defaultTab: "animation",
+  sections: ["animation"],
+  loadTab: "animation",
+  exportTab: "animation",
+  validateTab: "animation",
+  purpose: "Create, assemble, validate, and export portraits, expressions, and animation data.",
+  focus: [
+    "Custom Portrait Maker",
+    "Reference portrait checker",
+    "PixelLab handoff",
+    "Expression slots",
+    "Godly Hand assembly",
+    "Animation preview and export",
+  ],
+};
