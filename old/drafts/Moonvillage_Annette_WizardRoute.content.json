@@ -1,0 +1,12 @@
+{
+  "Format": "2.0.0",
+  "Changes": [
+    {
+      "Action": "EditData",
+      "Target": "Characters/Schedules/Moonvillage_Annette",
+      "Entries": {
+        "spring": "600 Custom_AnnetteHouseInside 2 8 2/800 Custom_Moonvillage 47 32 2/900 BusStop 11 23 1/1000 Town 1 55 1/1100 Forest 118 25 3/1200 WizardHouse 4 14 2/1400 Forest 9 35 2/1500 Town 1 90 1/1600 BusStop 42 23 3/1700 Custom_Moonvillage 47 32 2/1800 Custom_AnnetteHouseInside 2 8 2"
+      }
+    }
+  ]
+}
