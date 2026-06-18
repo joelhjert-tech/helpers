@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Godly Hand — Coordinate Picker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d1a; color: #e0e0f0; font-family: monospace; min-height: 100vh; }
+
+  /* Top bar */
+  #topbar { background: #13132a; border-bottom: 1px solid #2a2a4e; padding: 0 24px; display: flex; align-items: center; gap: 0; }
+  #topbar .brand { color: #7b8cde; font-weight: 700; font-size: 14px; padding: 12px 24px 12px 0; border-right: 1px solid #2a2a4e; margin-right: 16px; }
+  #topbar .sneak { margin-left: auto; color: #333355; font-size: 10px; border: 1px solid #2a2a4e; border-radius: 4px; padding: 2px 8px; }
+  .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; color: #555577; padding: 12px 16px; cursor: pointer; font-size: 12px; font-family: monospace; transition: color 0.1s; }
+  .tab-btn.active { border-bottom-color: #7b8cde; color: #e0e0ff; font-weight: 700; }
+  .tab-btn:hover:not(.active) { color: #9aa0c0; }
+
+  /* Content */
+  #content { padding: 24px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Cards */
+  .card { background: #1a1a2e; border: 1px solid #2a2a4e; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .card-warn { background: #1a120a; border-color: #4a3a0a; }
+  .card-success { background: #0a2a0a; border-color: #2a6a2a; }
+  .card-error { background: #120a0a; border-color: #4a2a2a; }
+  .card-blue { border-left: 3px solid #7b8cde; }
+  .card-green { border-left: 3px solid #44cc44; }
+  .card-gold { border-left: 3px solid #cc9944; }
+
+  .section-label { color: #9aa0c0; font-weight: 700; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; margin-top: 20px; }
+
+  /* Buttons */
+  .btn { border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: monospace; }
+  .btn-primary { background: #2a2a6e; border: 1px solid #4a4a9e; color: #e0e0ff; }
+  .btn-secondary { background: #1a1a1a; border: 1px solid #2a2a2a; color: #333355; cursor: default; }
+  .btn-secondary.active { background: #2a1a0a; border-color: #6a4a0a; color: #cc9944; cursor: pointer; }
+  .btn-small { padding: 4px 12px; font-size: 11px; border-radius: 4px; }
+  .btn-save { background: #0a2a0a; border: 1px solid #2a6a2a; color: #44cc44; }
+  .btn-cancel { background: transparent; border: 1px solid #2a2a4e; color: #555577; }
+  .btn-folder { background: #1a1a3a; border: 1px solid #2a2a6e; color: #7b8cde; padding: 6px 10px; font-size: 12px; }
+  .btn-export { background: #1a2a1a; border: 1px solid #2a6a2a; color: #44cc44; }
+  .btn-dismiss { background: #2a0a0a; border: 1px solid #cc4444; color: #cc4444; padding: 8px 24px; font-size: 13px; font-weight: 700; }
+
+  /* Zoom buttons */
+  .zoom-btn { background: #0d0d1a; border: 1px solid #2a2a4e; color: #555577; border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 12px; font-family: monospace; }
+  .zoom-btn.active { background: #2a2a6e; border-color: #4a4a9e; color: #e0e0ff; }
+
+  /* Input / Select */
+  input[type=text], select {
+    background: #0d0d1a; border: 1px solid #2a2a4e; border-radius: 4px;
+    color: #e0e0f0; padding: 6px 10px; font-size: 13px; font-family: monospace;
+    width: 100%; box-sizing: border-box;
+  }
+  input[type=text]:focus, select:focus { outline: 1px solid #4a4a9e; }
+
+  /* Status bar */
+  #status-bar { font-size: 12px; margin-bottom: 8px; min-height: 18px; }
+  #status-bar.ok { color: #44cc44; }
+  #status-bar.warn { color: #cc9944; }
+  #status-bar.error { color: #cc4444; }
+
+  /* Upload row */
+  #upload-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+  #zoom-row { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+
+  /* Tilesheet status */
+  #ts-status { background: #1a120a; border: 1px solid #4a3a0a; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: none; }
+  #ts-status.loaded { border-color: #2a6a2a; background: #0a1a0a; }
+  #ts-status-title { font-weight: 700; font-size: 12px; margin-bottom: 8px; color: #cc9944; }
+  #ts-status.loaded #ts-status-title { color: #44cc44; }
+  #ts-list { font-size: 12px; }
+  .ts-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .ts-tick { font-size: 13px; }
+  .ts-name { font-family: monospace; font-size: 12px; }
+  .ts-name.loaded { color: #44cc44; }
+  .ts-name.needed { color: #cc9944; }
+  .ts-hint { color: #555577; font-size: 11px; }
+
+  /* Folders */
+  #folders-panel { margin-bottom: 16px; }
+  #folders-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  #add-folder-row { display: flex; gap: 6px; margin-bottom: 12px; }
+  #add-folder-row input { flex: 1; font-size: 12px; }
+  #folder-list { }
+  .folder-item { margin-bottom: 8px; }
+  .folder-header {
+    display: flex; align-items: center; gap: 8px;
+    background: #1a1a2e; border: 1px solid #2a2a4e; border-radius: 6px;
+    padding: 8px 12px; cursor: pointer;
+  }
+  .folder-header.active { background: #1a1a3a; border-color: #4a4a9e; border-radius: 6px 6px 0 0; }
+  .folder-header.active.open { border-radius: 6px 6px 0 0; }
+  .folder-arrow { color: #555577; font-size: 12px; }
+  .folder-name { color: #9aa0c0; font-size: 13px; font-weight: 600; flex: 1; }
+  .folder-name.active { color: #e0e0ff; }
+  .folder-count { color: #555577; font-size: 11px; }
+  .folder-body { background: #13132a; border: 1px solid #2a2a6e; border-top: none; border-radius: 0 0 6px 6px; padding: 8px; }
+  .coord-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 4px; border-bottom: 1px solid #1a1a2e; }
+  .coord-label { color: #e0e0f0; font-size: 12px; }
+  .coord-sub { color: #555577; font-size: 11px; }
+  .coord-del { background: none; border: none; color: #cc4444; cursor: pointer; font-size: 13px; font-family: monospace; }
+  #no-coords-hint { color: #333355; font-size: 12px; margin-top: 4px; margin-left: 4px; }
+
+  /* Pending tile */
+  #pending-panel { background: #1a1a3a; border: 1px solid #4a4a9e; border-radius: 8px; padding: 14px; margin-bottom: 16px; display: none; }
+  #pending-title { color: #7b8cde; font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+  #pending-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #pending-row input { flex: 1; min-width: 200px; }
+
+  /* Map viewport */
+  #map-viewport { border: 1px solid #2a2a4e; border-radius: 8px; overflow: auto; width: 100%; height: 560px; background: #0a0a14; position: relative; display: none; }
+  #map-inner { position: relative; display: inline-block; cursor: crosshair; }
+  #map-canvas { display: block; image-rendering: pixelated; }
+  #map-empty { background: #0d0d1a; border: 1px dashed #2a2a4e; border-radius: 8px; padding: 40px; text-align: center; color: #333355; }
+  #coord-tooltip { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #1a1a2e; border: 1px solid #4a4a9e; border-radius: 4px;
+    padding: 4px 12px; color: #7b8cde; font-size: 12px; font-weight: 700;
+    pointer-events: none; z-index: 100; display: none; font-family: monospace; }
+
+  /* Overlay tiles */
+  .tile-overlay { position: absolute; box-sizing: border-box; pointer-events: none; }
+  .tile-hovered { background: rgba(42,42,78,0.4); border: 1px solid #4a4a9e; }
+  .tile-pending { background: rgba(74,74,158,0.5); border: 2px solid #7b8cde; }
+  .tile-saved { background: rgba(10,42,10,0.6); border: 2px solid #44cc44; }
+
+  /* Error modal */
+  #error-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 200; }
+  #error-modal.visible { display: flex; }
+  #error-box { background: #1a0a0a; border: 1px solid #cc4444; border-radius: 10px; padding: 28px; max-width: 480px; width: 90%; }
+  #error-title { color: #cc4444; font-weight: 700; font-size: 15px; margin-bottom: 12px; }
+  #error-msg { color: #9a6060; font-size: 12px; line-height: 1.8; margin-bottom: 16px; }
+  #error-detail { color: #9a6060; font-size: 12px; line-height: 1.8; margin-bottom: 20px; }
+  #error-detail code { color: #cc9944; }
+
+  /* Guide */
+  .guide-card { display: flex; gap: 16px; margin-bottom: 14px; }
+  .step-num { min-width: 28px; height: 28px; border-radius: 50%; background: #1a1a3a; border: 1px solid #4a4a9e; color: #7b8cde; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-body { background: #1a1a2e; border: 1px solid #2a2a4e; border-radius: 8px; padding: 12px 14px; flex: 1; }
+  .step-title { color: #e0e0f0; font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .step-text { color: #9aa0c0; font-size: 12px; line-height: 1.8; }
+  .step-note { margin-top: 8px; background: #0d0d1a; border-left: 3px solid #4a4a9e; padding: 6px 10px; border-radius: 0 4px 4px 0; color: #7b8cde; font-size: 11px; line-height: 1.6; }
+
+  /* Credits */
+  .credit-card { background: #1a1a2e; border: 1px solid #2a2a4e; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .credit-name { color: #e0e0f0; font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .credit-role { font-size: 11px; margin-bottom: 6px; }
+  .credit-desc { color: #9aa0c0; font-size: 12px; line-height: 1.6; }
+  .credit-link { font-size: 10px; margin-left: auto; text-decoration: none; }
+  .credit-link:hover { text-decoration: underline; }
+  a { color: #7b8cde; }
+
+  /* Bugs */
+  .bug-card { background: #1a1a2e; border: 1px solid #2a2a4e; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .bug-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .bug-id { color: #555577; font-size: 11px; font-family: monospace; }
+  .bug-title { color: #e0e0f0; font-weight: 700; font-size: 13px; }
+  .bug-status { margin-left: auto; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 10px; }
+  .bug-status.FIXED { border: 1px solid #44cc44; color: #44cc44; }
+  .bug-status.OPEN { border: 1px solid #cc4444; color: #cc4444; }
+  .bug-status.INVESTIGATING { border: 1px solid #cc9944; color: #cc9944; }
+  .bug-desc { color: #9aa0c0; font-size: 12px; line-height: 1.7; margin-bottom: 10px; }
+  .bug-fix { background: #0a140a; border: 1px solid #2a4a2a; border-radius: 4px; padding: 6px 10px; }
+  .bug-fix-label { color: #44cc44; font-size: 11px; font-weight: 700; }
+  .bug-fix-text { color: #9aa0c0; font-size: 11px; }
+
+  /* Misc */
+  .flex { display: flex; }
+  .flex-wrap { flex-wrap: wrap; }
+  .gap-8 { gap: 8px; }
+  .gap-10 { gap: 10px; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .ml-auto { margin-left: auto; }
+  .mb-10 { margin-bottom: 10px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-20 { margin-top: 20px; }
+  .mt-24 { margin-top: 24px; }
+  .text-11 { font-size: 11px; }
+  .text-12 { font-size: 12px; }
+  .text-13 { font-size: 13px; }
+  .lh-18 { line-height: 1.8; }
+  .color-gold { color: #cc9944; }
+  .color-green { color: #44cc44; }
+  .color-blue { color: #7b8cde; }
+  .color-muted { color: #555577; }
+  .color-dim { color: #9aa0c0; }
+  .color-red { color: #cc4444; }
+  .fw-700 { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div id="topbar">
+  <span class="brand">GODLY HAND</span>
+  <button class="tab-btn active" onclick="switchTab('picker')">Coord Picker</button>
+  <button class="tab-btn" onclick="switchTab('guide')">Guide</button>
+  <button class="tab-btn" onclick="switchTab('bugs')">Bugs</button>
+  <button class="tab-btn" onclick="switchTab('credits')">Credits</button>
+  <span class="sneak">SNEAK PEEK</span>
+</div>
+
+<!-- Error modal -->
+<div id="error-modal" onclick="closeError()">
+  <div id="error-box" onclick="event.stopPropagation()">
+    <div id="error-title">⚠ Failed to read map file</div>
+    <div id="error-msg"></div>
+    <div id="error-detail">
+      This can happen if:<br>
+      — The file is still packed as an <code>.xnb</code> — unpack it with xnbcli first<br>
+      — The file is not a valid <code>.tbin</code> or <code>.tmx</code> map file<br>
+      — The TMX uses an unsupported compression format<br>
+      — The file is corrupted or incomplete<br>
+      Check the <strong style="color:#e0e0f0">Bugs</strong> tab for known issues.
+    </div>
+    <button class="btn btn-dismiss" onclick="closeError()">Dismiss</button>
+  </div>
+</div>
+
+<!-- Coord tooltip -->
+<div id="coord-tooltip"></div>
+
+<!-- Content -->
+<div id="content">
+
+  <!-- ══ PICKER TAB ══ -->
+  <div id="tab-picker" class="tab-panel active">
+
+    <!-- Upload row -->
+    <div id="upload-row">
+      <input type="file" id="map-file-input" accept=".tbin,.tmx,.json" style="display:none" />
+      <input type="file" id="ts-file-input" accept="image/png" multiple style="display:none" />
+      <button class="btn btn-primary" onclick="document.getElementById('map-file-input').click()">📂 Load Map File (.tbin / .tmx)</button>
+      <button class="btn btn-secondary" id="ts-btn" onclick="document.getElementById('ts-file-input').click()">🖼 Upload Tilesheet PNG(s)</button>
+      <span id="status-bar"></span>
+      <div id="zoom-row" style="display:none">
+        <span class="color-muted text-12">Zoom:</span>
+        <button class="zoom-btn" onclick="setZoom(0.5)">0.5×</button>
+        <button class="zoom-btn active" onclick="setZoom(1)">1×</button>
+        <button class="zoom-btn" onclick="setZoom(2)">2×</button>
+        <button class="zoom-btn" onclick="setZoom(3)">3×</button>
+      </div>
+    </div>
+
+    <!-- Tilesheet status -->
+    <div id="ts-status">
+      <div id="ts-status-title">⚠ Tilesheets needed to render this map</div>
+      <div id="ts-list"></div>
+      <div id="ts-hint" class="text-11 color-muted mt-8" style="border-top:1px solid #4a3a0a;padding-top:8px">
+        Use the <strong class="color-gold">🖼 Upload Tilesheet PNG(s)</strong> button above. You can select multiple files at once.
+      </div>
+    </div>
+
+    <!-- Folders -->
+    <div id="folders-panel">
+      <div id="folders-header">
+        <span class="color-dim fw-700 text-13">Saved Coordinates</span>
+        <button class="btn btn-export btn-small" id="export-btn" onclick="exportTxt()" style="display:none">📄 Export .txt</button>
+      </div>
+      <div id="add-folder-row">
+        <input type="text" id="new-folder-input" placeholder="New folder name..." onkeydown="if(event.key==='Enter')addFolder()" />
+        <button class="btn btn-folder" onclick="addFolder()">+ Folder</button>
+      </div>
+      <div id="folder-list"></div>
+      <div id="no-coords-hint">Click any tile on the map to save a coordinate</div>
+    </div>
+
+    <!-- Pending save -->
+    <div id="pending-panel">
+      <div id="pending-title"></div>
+      <div id="pending-row">
+        <input type="text" id="label-input" placeholder="Label — e.g. Nicholas morning spawn" onkeydown="if(event.key==='Enter')saveCoord()" />
+        <select id="folder-select"></select>
+        <button class="btn btn-save btn-small" onclick="saveCoord()">Save</button>
+        <button class="btn btn-cancel btn-small" onclick="cancelPending()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Map -->
+    <div id="map-viewport">
+      <div id="map-inner">
+        <canvas id="map-canvas"></canvas>
+      </div>
+    </div>
+    <div id="map-empty">Load a .tbin or .tmx file to display the map</div>
+
+  </div><!-- /picker -->
+
+  <!-- ══ GUIDE TAB ══ -->
+  <div id="tab-guide" class="tab-panel" style="max-width:820px">
+    <div class="card mb-16">
+      <div class="color-blue fw-700 text-13 mb-10" style="margin-bottom:6px">What is this?</div>
+      <div class="color-dim text-12 lh-18">
+        Godly Hand Coordinate Picker lets you load a Stardew Valley map file, see it rendered,
+        and click any tile to record its coordinates. Built for custom NPC modders who are tired of counting tiles manually.
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:0">What You Need</div>
+    <div class="card card-warn mb-16">
+      <div class="color-gold fw-700 text-12 mb-10">⚠ The tool cannot display a map without both a map file AND tilesheet PNGs.</div>
+      <div class="color-dim text-12 lh-18" style="margin-bottom:12px">
+        Stardew Valley stores its maps and graphics in packed <code class="color-gold">.xnb</code> files.
+        You need to unpack them first using <strong style="color:#e0e0f0">xnbcli</strong> by LeonBlade.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:12px;background:#0d0d1a;border-radius:6px;padding:10px 12px">
+          <code class="color-blue text-12" style="min-width:160px">.tbin</code>
+          <span class="color-dim text-12 lh-18">Binary map format used by Stardew Valley. Unpacked from Maps/*.xnb using xnbcli.</span>
+        </div>
+        <div style="display:flex;gap:12px;background:#0d0d1a;border-radius:6px;padding:10px 12px">
+          <code class="color-blue text-12" style="min-width:160px">.tmx</code>
+          <span class="color-dim text-12 lh-18">XML map format exported from Tiled. Used by some mods. Supports CSV and base64+zlib.</span>
+        </div>
+        <div style="display:flex;gap:12px;background:#0d0d1a;border-radius:6px;padding:10px 12px">
+          <code class="color-green text-12" style="min-width:160px">.png (tilesheets)</code>
+          <span class="color-dim text-12 lh-18">The graphics the map tiles are drawn from. Without these the tool cannot render tiles — you will see a blank map.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:0">Step by Step</div>
+    <div id="guide-steps"></div>
+
+    <div class="card card-success mt-8">
+      <div class="color-green fw-700 text-12" style="margin-bottom:6px">Vanilla Tilesheet ZIP</div>
+      <div style="color:#4a8a4a;font-size:12px;line-height:1.8">
+        A ZIP of the unpacked vanilla Stardew Valley tilesheet PNGs is available alongside this tool.
+        Download it, unzip it, and use Upload Tilesheet PNG(s) to select all files at once.
+        These are ConcernedApe's assets — credit them accordingly and do not redistribute them separately.
+      </div>
+    </div>
+  </div><!-- /guide -->
+
+  <!-- ══ BUGS TAB ══ -->
+  <div id="tab-bugs" class="tab-panel">
+    <div class="card card-warn mb-16">
+      <div class="color-gold fw-700 text-12" style="margin-bottom:4px">Known Bugs</div>
+      <div style="color:#9a8060;font-size:12px;line-height:1.6">Bugs found during testing. Fixed issues are kept here for transparency.</div>
+    </div>
+    <div id="bug-list"></div>
+  </div>
+
+  <!-- ══ CREDITS TAB ══ -->
+  <div id="tab-credits" class="tab-panel">
+    <div class="card mb-16">
+      <div class="color-blue fw-700 text-13" style="margin-bottom:4px">GODLY HAND — Coordinate Picker</div>
+      <div class="color-dim text-12 lh-18">
+        A sneak peek at the Godly Hand NPC Creator — a full all-in-one tool for creating custom Stardew Valley NPCs.
+        This standalone release is the coordinate picker component, released for early community testing.
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:0">Made By</div>
+    <div class="credit-card card-green" style="border-left:3px solid #44cc44">
+      <div class="credit-name">Aerishiph</div>
+      <div class="credit-role color-green">Author · Engine Designer · Tester</div>
+      <div class="credit-desc">Creator of Godly Hand. Conceived and designed the tool out of frustration with existing coordinate workflows while building a custom NPC mod. Responsible for the full engine design, feature direction, and all in-game testing.</div>
+    </div>
+    <div class="credit-card card-blue" style="border-left:3px solid #7b8cde">
+      <div class="credit-name">Claude</div>
+      <div class="credit-role color-blue">Development Assistant · by Anthropic</div>
+      <div class="credit-desc">Assisted with engineering throughout development. Reverse-engineered the tbin binary format from hex analysis of Town.tbin, diagnosed and fixed the DataView bounds error caused by an undocumented blendMode byte in the S tile token, and built the TMX parser, coordinate picker UI, folder system, tilesheet persistence logic, and pure-JS zlib inflate.</div>
+    </div>
+
+    <div class="section-label">Cross-Mod Testing</div>
+    <div class="color-dim text-12 mb-16 lh-18">The coordinate picker was tested against the following modded maps to confirm compatibility beyond vanilla.</div>
+    <div id="cross-mod-list"></div>
+
+    <div class="section-label">Tools Referenced</div>
+    <div class="credit-card card-gold" style="border-left:3px solid #cc9944">
+      <div class="credit-name">xnbcli</div>
+      <div class="credit-role color-gold">by LeonBlade</div>
+      <div class="credit-desc" style="margin-bottom:6px">Required to unpack Stardew Valley's XNB files into tbin and PNG format for use with this tool.</div>
+      <a href="https://github.com/LeonBlade/xnbcli" target="_blank" class="color-gold text-11">github.com/LeonBlade/xnbcli ↗</a>
+    </div>
+
+    <div class="card card-error mt-24">
+      <div class="color-red fw-700 text-11" style="margin-bottom:6px">Asset Notice</div>
+      <div style="color:#9a6060;font-size:12px;line-height:1.7">
+        This tool does not redistribute any game assets. Tilesheet PNGs are loaded locally by the user from their own
+        unpacked game files. Stardew Valley assets belong to ConcernedApe.
+        Modded tilesheet assets belong to their respective authors — credit them if you use their mods.
+      </div>
+    </div>
+  </div><!-- /credits -->
+
+</div><!-- /content -->
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let mapData = null;
+let mapName = '';
+let zoom = 2;
+let folders = [{ name: 'Default', coords: [] }];
+let activeFolder = 0;
+let openFolders = { 0: true };
+let tilesheetImgs = {};
+let renderReady = false;
+let pendingTile = null;
+let hoveredTile = null;
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// INFLATE (pure JS — no dependencies)
+// ═══════════════════════════════════════════
+function zlibInflate(data) {
+  return rawInflate(data, 2);
+}
+
+function rawInflate(data, startByte) {
+  let pos = startByte * 8;
+
+  const readBits = (n) => {
+    let v = 0;
+    for (let i = 0; i < n; i++) {
+      v |= ((data[pos >> 3] >> (pos & 7)) & 1) << i;
+      pos++;
+    }
+    return v;
+  };
+
+  const buildCanonical = (lengths, n) => {
+    const blCount = new Array(16).fill(0);
+    for (let i = 0; i < n; i++) blCount[lengths[i]]++;
+    blCount[0] = 0;
+    let code = 0;
+    const nextCode = new Array(16).fill(0);
+    for (let bl = 1; bl < 16; bl++) {
+      code = (code + blCount[bl - 1]) << 1;
+      nextCode[bl] = code;
+    }
+    const table = {};
+    for (let sym = 0; sym < n; sym++) {
+      const l = lengths[sym];
+      if (l !== 0) {
+        table[l + '_' + nextCode[l]] = sym;
+        nextCode[l]++;
+      }
+    }
+    return table;
+  };
+
+  const decodeSym = (table) => {
+    let code = 0;
+    for (let length = 1; length < 16; length++) {
+      code = (code << 1) | readBits(1);
+      const key = length + '_' + code;
+      if (key in table) return table[key];
+    }
+    return -1;
+  };
+
+  const LENBASE  = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  const LENEXT   = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  const DISTBASE = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  const DISTEXT  = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  const CL_ORDER = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+
+  const fixedLitLens = new Array(288);
+  for (let i=0;i<144;i++) fixedLitLens[i]=8;
+  for (let i=144;i<256;i++) fixedLitLens[i]=9;
+  for (let i=256;i<280;i++) fixedLitLens[i]=7;
+  for (let i=280;i<288;i++) fixedLitLens[i]=8;
+  const fixedDistLens = new Array(32).fill(5);
+
+  const output = [];
+
+  const inflateBlock = (litTable, distTable) => {
+    while (true) {
+      const sym = decodeSym(litTable);
+      if (sym < 0) throw new Error('inflate: bad literal symbol');
+      if (sym < 256) { output.push(sym); }
+      else if (sym === 256) { break; }
+      else {
+        const li = sym - 257;
+        const length = LENBASE[li] + readBits(LENEXT[li]);
+        const dsym = decodeSym(distTable);
+        if (dsym < 0) throw new Error('inflate: bad dist symbol');
+        const dist = DISTBASE[dsym] + readBits(DISTEXT[dsym]);
+        const start = output.length - dist;
+        for (let i = 0; i < length; i++) output.push(output[start + (i % dist)]);
+      }
+    }
+  };
+
+  let bfinal = 0;
+  while (!bfinal) {
+    bfinal = readBits(1);
+    const btype = readBits(2);
+    if (btype === 0) {
+      pos = (pos + 7) & ~7;
+      const len = data[pos >> 3] | (data[(pos >> 3) + 1] << 8);
+      pos += 32;
+      for (let i = 0; i < len; i++) output.push(data[(pos >> 3) + i]);
+      pos += len * 8;
+    } else if (btype === 1) {
+      inflateBlock(buildCanonical(fixedLitLens, 288), buildCanonical(fixedDistLens, 32));
+    } else if (btype === 2) {
+      const hlit  = readBits(5) + 257;
+      const hdist = readBits(5) + 1;
+      const hclen = readBits(4) + 4;
+      const clLens = new Array(19).fill(0);
+      for (let i = 0; i < hclen; i++) clLens[CL_ORDER[i]] = readBits(3);
+      const clTable = buildCanonical(clLens, 19);
+      const lens = [];
+      while (lens.length < hlit + hdist) {
+        const sym = decodeSym(clTable);
+        if (sym < 0) throw new Error('inflate: bad cl symbol');
+        if (sym < 16) { lens.push(sym); }
+        else if (sym === 16) { const rep = lens[lens.length-1]; const cnt = readBits(2)+3; for(let i=0;i<cnt;i++) lens.push(rep); }
+        else if (sym === 17) { const cnt = readBits(3)+3; for(let i=0;i<cnt;i++) lens.push(0); }
+        else { const cnt = readBits(7)+11; for(let i=0;i<cnt;i++) lens.push(0); }
+      }
+      inflateBlock(buildCanonical(lens.slice(0,hlit),hlit), buildCanonical(lens.slice(hlit),hdist));
+    } else {
+      throw new Error('inflate: invalid block type');
+    }
+  }
+  return new Uint8Array(output);
+}
+
+// ═══════════════════════════════════════════
+// TBIN PARSER
+// ═══════════════════════════════════════════
+function parseTbinFull(buffer) {
+  const data = new Uint8Array(buffer);
+  const sz = data.length;
+  let pos = 14;
+
+  const ri = () => {
+    if (pos+4 > sz) throw new Error('unexpected end of file');
+    const v = data[pos]|(data[pos+1]<<8)|(data[pos+2]<<16)|(data[pos+3]<<24);
+    pos += 4; return v >>> 0;
+  };
+  const rs = () => {
+    const l = ri();
+    if (l < 0 || pos+l > sz) throw new Error('string out of bounds');
+    let s = ''; for (let i=0;i<l;i++) s+=String.fromCharCode(data[pos+i]);
+    pos += l; return s;
+  };
+  const rp = () => {
+    const c = ri();
+    for (let i=0;i<c;i++) {
+      rs();
+      if (pos >= sz) return;
+      const vt = data[pos++];
+      if (vt===0) pos++;
+      else if (vt===1||vt===2) pos+=4;
+      else rs();
+    }
+  };
+
+  try {
+    rp();
+    const tc = ri();
+    const tsheets = [];
+    for (let i=0;i<tc;i++) {
+      const tid = rs(); rs();
+      const timg = rs().replace(/(\.png)+$/i, '');
+      const sw=ri(), sh=ri(), tw=ri(), th=ri();
+      pos += 16; rp();
+      tsheets.push({id:tid, img:timg, sw, sh, tw, th});
+    }
+    const lc = ri();
+    const layers = [];
+    for (let li=0;li<lc;li++) {
+      const lid = rs(); pos++; rs();
+      const lw=ri(), lh=ri(), ltw=ri(), lth=ri();
+      rp();
+      const total = lw*lh;
+      const tiles = new Array(total).fill(null);
+      let idx=0, curTs=null;
+      while (idx < total && pos < sz) {
+        const b = data[pos];
+        if (b===0x00) { pos++; idx++; }
+        else if (b===0x4e) { pos++; const cnt=ri(); idx+=Math.min(cnt,total-idx); }
+        else if (b===0x54) { pos++; curTs=rs(); }
+        else if (b===0x53) { pos++; const ti=ri(); pos++; rp(); tiles[idx++]=[curTs,ti]; }
+        else if (b===0x41) {
+          pos++; ri(); const fc=ri();
+          let first=null, framets=curTs;
+          for (let fi=0;fi<fc;fi++) {
+            if (data[pos]===0x54) { pos++; framets=rs(); }
+            if (data[pos]===0x53) { pos++; const fti=ri(); pos++; rp(); if(fi===0) first=[framets,fti]; }
+          }
+          curTs=framets; rp(); tiles[idx++]=first;
+        } else { pos++; idx++; }
+      }
+      layers.push({id:lid, width:lw, height:lh, tileW:ltw, tileH:lth, tiles});
+    }
+    return {tsheets, layers, error:null};
+  } catch(e) { return {tsheets:[], layers:[], error:e.message}; }
+}
+
+// ═══════════════════════════════════════════
+// TMX PARSER
+// ═══════════════════════════════════════════
+function parseTmx(text) {
+  try {
+    const doc = new DOMParser().parseFromString(text, 'text/xml');
+    if (doc.querySelector('parsererror')) throw new Error('Invalid XML');
+    const mapEl = doc.querySelector('map');
+    if (!mapEl) throw new Error('No <map> element found');
+
+    const tsheets = [];
+    doc.querySelectorAll('tileset').forEach(ts => {
+      const firstGid = parseInt(ts.getAttribute('firstgid') || '1');
+      const name = ts.getAttribute('name') || '';
+      const imgEl = ts.querySelector('image');
+      if (!imgEl) return;
+      const src = imgEl.getAttribute('source') || '';
+      const img = src.replace(/^.*[\\/]/, '').replace(/(\.png)+$/i, '');
+      const tw = parseInt(ts.getAttribute('tilewidth') || imgEl.getAttribute('tilewidth') || '16');
+      const th = parseInt(ts.getAttribute('tileheight') || imgEl.getAttribute('tileheight') || '16');
+      const imgW = parseInt(imgEl.getAttribute('width') || '0');
+      const sw = tw > 0 && imgW > 0 ? Math.floor(imgW / tw) : 1;
+      const imgH = parseInt(imgEl.getAttribute('height') || '0');
+      const sh = th > 0 && imgH > 0 ? Math.floor(imgH / th) : 1;
+      tsheets.push({ id: name, img, sw, sh, tw, th, firstGid });
+    });
+    tsheets.sort((a, b) => a.firstGid - b.firstGid);
+
+    const resolveGid = (gid) => {
+      if (!gid) return null;
+      const cleanGid = gid & 0x1FFFFFFF;
+      if (cleanGid === 0) return null;
+      let ts = null;
+      for (let i = tsheets.length - 1; i >= 0; i--) {
+        if (tsheets[i].firstGid <= cleanGid) { ts = tsheets[i]; break; }
+      }
+      if (!ts) return null;
+      return [ts.id, cleanGid - ts.firstGid];
+    };
+
+    const layers = [];
+    doc.querySelectorAll('map > layer').forEach(layerEl => {
+      const lid = layerEl.getAttribute('name') || 'Layer';
+      const lw = parseInt(layerEl.getAttribute('width') || '0');
+      const lh = parseInt(layerEl.getAttribute('height') || '0');
+      const dataEl = layerEl.querySelector('data');
+      if (!dataEl) return;
+      const encoding = dataEl.getAttribute('encoding') || 'xml';
+      const total = lw * lh;
+      const tiles = new Array(total).fill(null);
+
+      if (encoding === 'csv') {
+        const gids = dataEl.textContent.trim().split(',').map(s => parseInt(s.trim()) || 0);
+        gids.forEach((gid, i) => { if (i < total) tiles[i] = resolveGid(gid); });
+      } else if (encoding === 'base64') {
+        const compression = dataEl.getAttribute('compression') || 'none';
+        const raw_str = atob(dataEl.textContent.trim());
+        const bytes = new Uint8Array(raw_str.length);
+        for (let i = 0; i < raw_str.length; i++) bytes[i] = raw_str.charCodeAt(i);
+        if (compression === 'none') {
+          const dv = new DataView(bytes.buffer);
+          for (let i = 0; i < total && i*4+4 <= bytes.length; i++) tiles[i] = resolveGid(dv.getUint32(i*4, true));
+        } else if (compression === 'zlib' || compression === 'gzip') {
+          try {
+            const decompressed = zlibInflate(bytes);
+            const dv = new DataView(decompressed.buffer);
+            for (let i = 0; i < total && i*4+4 <= decompressed.length; i++) tiles[i] = resolveGid(dv.getUint32(i*4, true));
+          } catch(e) { throw new Error('Failed to decompress layer "' + lid + '": ' + e.message); }
+        }
+      } else {
+        layerEl.querySelectorAll('tile').forEach((t, i) => {
+          if (i < total) tiles[i] = resolveGid(parseInt(t.getAttribute('gid') || '0'));
+        });
+      }
+      layers.push({ id: lid, width: lw, height: lh, tileW: 16, tileH: 16, tiles });
+    });
+
+    if (!layers.length) throw new Error('No layers found in TMX');
+    return { tsheets, layers, error: null };
+  } catch(e) { return { tsheets: [], layers: [], error: e.message }; }
+}
+
+// ═══════════════════════════════════════════
+// MAP UPLOAD
+// ═══════════════════════════════════════════
+document.getElementById('map-file-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const nm = file.name.replace(/\.(tbin|tmx|json)$/i, '');
+  const isTmx = file.name.toLowerCase().endsWith('.tmx');
+  mapName = nm;
+  renderReady = false;
+  setStatus('');
+  closeError();
+
+  const reader = new FileReader();
+  reader.onerror = () => showError('FileReader failed to read the map file. The file may be corrupted or inaccessible.');
+  reader.onload = (ev) => {
+    const result = isTmx ? parseTmx(ev.target.result) : parseTbinFull(ev.target.result);
+    if (result.error) { showError(result.error); return; }
+    if (!result.layers.length) { showError('No layers found in this file. The map may use an unsupported format or be empty.'); return; }
+    mapData = result;
+    document.getElementById('zoom-row').style.display = 'flex';
+    document.getElementById('map-empty').style.display = 'none';
+    document.getElementById('map-viewport').style.display = 'block';
+    document.getElementById('ts-btn').classList.add('active');
+    updateTsStatus();
+    checkAndRender();
+  };
+  if (isTmx) reader.readAsText(file);
+  else reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
+document.getElementById('ts-file-input').addEventListener('change', function(e) {
+  Array.from(e.target.files).forEach(file => {
+    const name = file.name.replace(/(\.png)+$/i, '').toLowerCase();
+    const reader = new FileReader();
+    reader.onerror = () => setStatus('⚠ Failed to read ' + file.name + ' — file may be corrupted.', 'warn');
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onerror = () => setStatus('⚠ Failed to load ' + name + '.png — file may not be a valid PNG.', 'warn');
+      img.onload = () => {
+        tilesheetImgs[name] = img;
+        updateTsStatus();
+        checkAndRender();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+});
+
+function checkAndRender() {
+  if (!mapData) return;
+  const allLoaded = mapData.tsheets.every(ts => tilesheetImgs[ts.img.toLowerCase()]);
+  if (allLoaded) {
+    renderReady = true;
+    setStatus('All tilesheets loaded — map ready to render.', 'ok');
+    renderMap();
+  } else {
+    const needed = mapData.tsheets.filter(ts => !tilesheetImgs[ts.img.toLowerCase()]).map(t => t.img + '.png').join(', ');
+    setStatus('Loaded ' + mapName + ' — ' + mapData.layers[0].width + 'x' + mapData.layers[0].height + ' tiles. Still need: ' + needed, 'ok');
+  }
+}
+
+// ═══════════════════════════════════════════
+// TILESHEET STATUS
+// ═══════════════════════════════════════════
+function updateTsStatus() {
+  if (!mapData) return;
+  const el = document.getElementById('ts-status');
+  const title = document.getElementById('ts-status-title');
+  const list = document.getElementById('ts-list');
+  const hint = document.getElementById('ts-hint');
+  const allLoaded = mapData.tsheets.every(ts => tilesheetImgs[ts.img.toLowerCase()]);
+  el.style.display = 'block';
+  el.className = allLoaded ? 'loaded' : '';
+  title.textContent = allLoaded ? '✓ All tilesheets loaded — map rendering' : '⚠ Tilesheets needed to render this map';
+  list.innerHTML = mapData.tsheets.map(ts => {
+    const loaded = !!tilesheetImgs[ts.img.toLowerCase()];
+    return `<div class="ts-row">
+      <span class="ts-tick">${loaded ? '✓' : '○'}</span>
+      <code class="ts-name ${loaded ? 'loaded' : 'needed'}">${ts.img}.png</code>
+      <span class="ts-hint">${loaded ? 'loaded' : '— unpack ' + ts.img + '.xnb with xnbcli'}</span>
+    </div>`;
+  }).join('');
+  hint.style.display = allLoaded ? 'none' : 'block';
+}
+
+// ═══════════════════════════════════════════
+// MAP RENDER
+// ═══════════════════════════════════════════
+function renderMap() {
+  if (!renderReady || !mapData) return;
+  try {
+    const canvas = document.getElementById('map-canvas');
+    const layer0 = mapData.layers[0];
+    const TILE = 16 * zoom;
+    canvas.width = layer0.width * TILE;
+    canvas.height = layer0.height * TILE;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const ORDER = ['Back','Back2','Back3','Buildings','Buildings2','Paths','Front','AlwaysFront'];
+    const toRender = ORDER.map(n => mapData.layers.find(l => l.id === n)).filter(Boolean);
+    mapData.layers.filter(l => !ORDER.includes(l.id) && l.id).forEach(l => toRender.push(l));
+
+    for (const layer of toRender) {
+      for (let y = 0; y < layer.height; y++) {
+        for (let x = 0; x < layer.width; x++) {
+          const tile = layer.tiles[y * layer.width + x];
+          if (!tile) continue;
+          const [tsName, tileIdx] = tile;
+          const ts = mapData.tsheets.find(t => t.id === tsName || t.img === tsName);
+          if (!ts) continue;
+          const img = tilesheetImgs[ts.img.toLowerCase()];
+          if (!img) continue;
+          const srcX = (tileIdx % ts.sw) * ts.tw;
+          const srcY = Math.floor(tileIdx / ts.sw) * ts.th;
+          ctx.drawImage(img, srcX, srcY, ts.tw, ts.th, x*TILE, y*TILE, TILE, TILE);
+        }
+      }
+    }
+    renderOverlays();
+  } catch(e) {
+    setStatus('⚠ Render error: ' + e.message, 'warn');
+  }
+}
+
+function renderOverlays() {
+  const inner = document.getElementById('map-inner');
+  // Remove existing overlays
+  inner.querySelectorAll('.tile-overlay').forEach(el => el.remove());
+  if (!mapData) return;
+  const layer = mapData.layers[0];
+  const TILE = 16 * zoom;
+
+  // Hovered
+  if (hoveredTile) {
+    const d = document.createElement('div');
+    d.className = 'tile-overlay tile-hovered';
+    d.style.left = hoveredTile.x * TILE + 'px';
+    d.style.top = hoveredTile.y * TILE + 'px';
+    d.style.width = TILE + 'px'; d.style.height = TILE + 'px';
+    inner.appendChild(d);
+  }
+  // Pending
+  if (pendingTile) {
+    const d = document.createElement('div');
+    d.className = 'tile-overlay tile-pending';
+    d.style.left = pendingTile.x * TILE + 'px';
+    d.style.top = pendingTile.y * TILE + 'px';
+    d.style.width = TILE + 'px'; d.style.height = TILE + 'px';
+    inner.appendChild(d);
+  }
+  // Saved
+  folders.forEach(f => f.coords.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'tile-overlay tile-saved';
+    d.style.left = c.x * TILE + 'px';
+    d.style.top = c.y * TILE + 'px';
+    d.style.width = TILE + 'px'; d.style.height = TILE + 'px';
+    inner.appendChild(d);
+  }));
+}
+
+// Map mouse events
+document.getElementById('map-canvas').addEventListener('mousemove', function(e) {
+  if (!mapData) return;
+  const TILE = 16 * zoom;
+  const rect = this.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / TILE);
+  const y = Math.floor((e.clientY - rect.top) / TILE);
+  const layer = mapData.layers[0];
+  if (x >= 0 && x < layer.width && y >= 0 && y < layer.height) {
+    hoveredTile = {x, y};
+    const tt = document.getElementById('coord-tooltip');
+    tt.style.display = 'block';
+    tt.textContent = mapName + ' X: ' + x + ' Y: ' + y;
+    renderOverlays();
+  }
+});
+
+document.getElementById('map-canvas').addEventListener('mouseleave', function() {
+  hoveredTile = null;
+  document.getElementById('coord-tooltip').style.display = 'none';
+  renderOverlays();
+});
+
+document.getElementById('map-canvas').addEventListener('click', function(e) {
+  if (!mapData) return;
+  const TILE = 16 * zoom;
+  const rect = this.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / TILE);
+  const y = Math.floor((e.clientY - rect.top) / TILE);
+  pendingTile = {x, y};
+  updatePendingPanel();
+  renderOverlays();
+});
+
+// ═══════════════════════════════════════════
+// ZOOM
+// ═══════════════════════════════════════════
+function setZoom(z) {
+  zoom = z;
+  document.querySelectorAll('.zoom-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderMap();
+}
+
+// ═══════════════════════════════════════════
+// PENDING TILE
+// ═══════════════════════════════════════════
+function updatePendingPanel() {
+  const panel = document.getElementById('pending-panel');
+  const title = document.getElementById('pending-title');
+  const sel = document.getElementById('folder-select');
+  if (!pendingTile) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  title.textContent = 'Save coordinate — ' + mapName + ' X:' + pendingTile.x + ' Y:' + pendingTile.y;
+  sel.innerHTML = folders.map((f, i) => `<option value="${i}">${f.name}</option>`).join('');
+  sel.value = activeFolder;
+  document.getElementById('label-input').value = '';
+  document.getElementById('label-input').focus();
+}
+
+function saveCoord() {
+  if (!pendingTile) return;
+  const label = document.getElementById('label-input').value.trim() || pendingTile.x + ',' + pendingTile.y;
+  const fi = parseInt(document.getElementById('folder-select').value);
+  activeFolder = fi;
+  folders[fi].coords.push({ x: pendingTile.x, y: pendingTile.y, label, map: mapName, id: Date.now() });
+  pendingTile = null;
+  updatePendingPanel();
+  renderFolders();
+  renderOverlays();
+}
+
+function cancelPending() {
+  pendingTile = null;
+  updatePendingPanel();
+  renderOverlays();
+}
+
+// ═══════════════════════════════════════════
+// FOLDERS
+// ═══════════════════════════════════════════
+function addFolder() {
+  const input = document.getElementById('new-folder-input');
+  const name = input.value.trim();
+  if (!name) return;
+  folders.push({ name, coords: [] });
+  input.value = '';
+  renderFolders();
+}
+
+function removeCoord(fi, id) {
+  folders[fi].coords = folders[fi].coords.filter(c => c.id !== id);
+  renderFolders();
+  renderOverlays();
+}
+
+function renderFolders() {
+  const list = document.getElementById('folder-list');
+  const hint = document.getElementById('no-coords-hint');
+  const exportBtn = document.getElementById('export-btn');
+  const total = folders.reduce((a, f) => a + f.coords.length, 0);
+  hint.style.display = total === 0 ? 'block' : 'none';
+  exportBtn.style.display = total > 0 ? 'inline-block' : 'none';
+
+  list.innerHTML = folders.map((folder, fi) => {
+    const isActive = fi === activeFolder;
+    const isOpen = openFolders[fi];
+    return `
+      <div class="folder-item">
+        <div class="folder-header ${isActive ? 'active' : ''}" onclick="toggleFolder(${fi})">
+          <span class="folder-arrow">${isOpen ? '▼' : '▶'}</span>
+          <span class="folder-name ${isActive ? 'active' : ''}">${folder.name}</span>
+          <span class="folder-count">${folder.coords.length}</span>
+        </div>
+        ${isOpen ? `
+        <div class="folder-body">
+          ${folder.coords.length === 0
+            ? '<div style="color:#333355;font-size:11px;padding:4px">No coordinates saved yet</div>'
+            : folder.coords.map(c => `
+              <div class="coord-row">
+                <div>
+                  <div class="coord-label">${c.label}</div>
+                  <div class="coord-sub">${c.map} X:${c.x} Y:${c.y}</div>
+                </div>
+                <button class="coord-del" onclick="removeCoord(${fi}, ${c.id})">×</button>
+              </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+  }).join('');
+
+  // Update folder select in pending panel
+  const sel = document.getElementById('folder-select');
+  sel.innerHTML = folders.map((f, i) => `<option value="${i}">${f.name}</option>`).join('');
+  sel.value = activeFolder;
+}
+
+function toggleFolder(fi) {
+  activeFolder = fi;
+  openFolders[fi] = !openFolders[fi];
+  renderFolders();
+}
+
+// ═══════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════
+function exportTxt() {
+  const lines = ['GODLY HAND — COORDINATE REFERENCE', 'Generated: ' + new Date().toLocaleString(), ''];
+  folders.forEach(folder => {
+    if (!folder.coords.length) return;
+    lines.push('── ' + folder.name.toUpperCase() + ' ─────────────────────────');
+    folder.coords.forEach(c => {
+      lines.push('  ' + c.label);
+      lines.push('    Map: ' + c.map + '   X: ' + c.x + '   Y: ' + c.y);
+    });
+    lines.push('');
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'coordinates.txt';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════
+// STATUS / ERROR
+// ═══════════════════════════════════════════
+function setStatus(msg, type) {
+  const el = document.getElementById('status-bar');
+  el.textContent = msg;
+  el.className = type || '';
+}
+
+function showError(msg) {
+  document.getElementById('error-msg').innerHTML = '<strong style="color:#e0e0f0">Error:</strong> ' + msg;
+  document.getElementById('error-modal').classList.add('visible');
+}
+
+function closeError() {
+  document.getElementById('error-modal').classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════
+// BUGS
+// ═══════════════════════════════════════════
+const BUGS = [
+  {
+    id: 'BUG-001',
+    title: 'Double .png extension in tilesheet img field (tbin + TMX)',
+    status: 'FIXED',
+    desc: 'Some tbin and TMX files store the tilesheet image path with a .png extension already embedded in the img field (e.g. spring_town.png instead of spring_town). This produced double-extension names like spring_town.png.png, causing tilesheets to show as unloaded even when the correct PNG was uploaded. Confirmed in Farm_WaterfallMFS.tbin and Farm_Waterfall.tbin.',
+    fix: 'Fixed — all trailing .png occurrences are now stripped with a greedy regex in both parsers before the name is stored for matching and display.',
+  },
+  {
+    id: 'BUG-002',
+    title: 'TMX base64+zlib compressed layers not rendering',
+    status: 'FIXED',
+    desc: 'TMX files exported from Tiled with base64+zlib compression (the Tiled default) failed to render any tiles. The parser only handled base64 uncompressed and silently skipped compressed layers. farm.tmx from Tiny Garden Farm by DaisyNiko uses base64+zlib on all 5 layers, causing a completely blank map.',
+    fix: 'Fixed — added zlib decompression. Initial attempt used DecompressionStream (unavailable in target environment) then pako (import failed). Final fix: pure-JS inflate with no external dependencies.',
+  },
+  {
+    id: 'BUG-003',
+    title: 'TMX zlib decompression failing — wrong deflate format',
+    status: 'FIXED',
+    desc: 'Even after BUG-002 the zlib decompression failed. Root cause: the hand-rolled inflate had a bug in the dynamic Huffman path (btype=2), which is the format used by all layers in farm.tmx. The bug was in the table lookup — array indexing instead of canonical code matching.',
+    fix: 'Fixed — rewrote inflate using verified canonical Huffman decode (length_code string key lookup). Translated from a working Python implementation verified byte-for-byte against farm.tmx. Confirmed working with farm.tmx (Tiny Garden Farm by DaisyNiko) and Ridgeside Village maps.',
+  },
+];
+
+document.getElementById('bug-list').innerHTML = BUGS.map(bug => `
+  <div class="bug-card" style="border-left:3px solid ${bug.status==='FIXED'?'#44cc44':bug.status==='OPEN'?'#cc4444':'#cc9944'}">
+    <div class="bug-header">
+      <code class="bug-id">${bug.id}</code>
+      <span class="bug-title">${bug.title}</span>
+      <span class="bug-status ${bug.status}">${bug.status}</span>
+    </div>
+    <div class="bug-desc">${bug.desc}</div>
+    ${bug.fix ? `<div class="bug-fix"><span class="bug-fix-label">Fix: </span><span class="bug-fix-text">${bug.fix}</span></div>` : ''}
+  </div>`).join('');
+
+// ═══════════════════════════════════════════
+// CREDITS
+// ═══════════════════════════════════════════
+const CROSS_MODS = [
+  { name: 'Tiny Garden Farm', author: 'DaisyNiko', url: 'https://www.nexusmods.com/stardewvalley/mods/4635', desc: 'A small custom farm map. Tested tbin loading, and TMX base64+zlib decompression which revealed BUG-002 and BUG-003.' },
+  { name: "DaisyNiko's Tilesheets", author: 'DaisyNiko', url: 'https://www.nexusmods.com/stardewvalley/mods/4736', desc: 'Custom tilesheet resource. Confirmed tilesheet PNG persistence works correctly across maps sharing sheets.' },
+  { name: 'Saloon Second Story', author: 'LemurKat', url: 'https://www.nexusmods.com/stardewvalley/mods/30194', desc: 'Adds a second floor to the Saloon. Confirmed the coord picker renders and picks correctly on interior modded maps.' },
+  { name: 'Ridgeside Village', author: 'Rafseazz and mamaesh', url: 'https://www.nexusmods.com/stardewvalley/mods/7286', desc: 'One of the largest Stardew Valley expansion mods — 50+ NPCs, new location, custom maps. Confirmed the picker handles large-scale modded maps with base64+zlib TMX encoding.' },
+];
+
+document.getElementById('cross-mod-list').innerHTML = CROSS_MODS.map(mod => `
+  <div class="credit-card card-blue" style="border-left:3px solid #7b8cde">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+      <a href="${mod.url}" target="_blank" class="credit-name" style="text-decoration:none;color:#e0e0f0">${mod.name}</a>
+      <span class="color-muted text-11">by ${mod.author}</span>
+      <a href="${mod.url}" target="_blank" class="credit-link color-blue" style="margin-left:auto">Nexus ↗</a>
+    </div>
+    <div class="credit-desc">${mod.desc}</div>
+  </div>`).join('');
+
+// ═══════════════════════════════════════════
+// GUIDE
+// ═══════════════════════════════════════════
+const STEPS = [
+  { n:'1', title:'Unpack your map files', body:'Download xnbcli from github.com/LeonBlade/xnbcli. Run it against your Stardew Valley Content/Maps folder. This produces .tbin files and all the tilesheet .png files. If you are using a modded map in .tmx format you may already have the file — check the mod folder.', note:null },
+  { n:'2', title:'Load the map file', body:'Click Load Map File and select your .tbin or .tmx. The tool will parse it and tell you which tilesheet PNGs it needs to render. If it cannot parse the file, an error popup will tell you exactly what went wrong.', note:'The map file on its own is enough to enable coordinate picking. You do not need the tilesheets just to click tiles — but you will be clicking blind without them.' },
+  { n:'3', title:'Upload the tilesheet PNGs', body:'Click Upload Tilesheet PNG(s) and select all the PNG files the tool listed as needed. You can select multiple files at once. The status panel will tick each one green as it loads. Once all are loaded the map renders automatically.', note:'Tilesheet PNGs stay in memory when you switch maps. If your next map shares sheets with the current one they are already loaded.' },
+  { n:'4', title:'Click a tile to save a coordinate', body:'Hover over the map to see the live X Y coordinate in the tooltip at the bottom. Click any tile to open the save prompt. Type a label, choose a folder and hit Save or press Enter.', note:null },
+  { n:'5', title:'Organise with folders', body:'Create folders to keep coordinates grouped — one per NPC, one per schedule route, or however works for you. Click a folder header to expand it. Click it again to collapse. The active folder is highlighted.', note:null },
+  { n:'6', title:'Export when done', body:'Click Export .txt at the top of the Saved Coordinates panel. This downloads a plain text file with all your folders and coordinates laid out cleanly. Keep it open in Notepad while writing your schedule or event files.', note:null },
+];
+
+document.getElementById('guide-steps').innerHTML = STEPS.map(s => `
+  <div class="guide-card">
+    <div class="step-num">${s.n}</div>
+    <div class="step-body">
+      <div class="step-title">${s.title}</div>
+      <div class="step-text">${s.body}</div>
+      ${s.note ? `<div class="step-note">${s.note}</div>` : ''}
+    </div>
+  </div>`).join('');
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+renderFolders();
+</script>
+</body>
+</html>
